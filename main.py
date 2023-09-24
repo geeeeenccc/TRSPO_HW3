@@ -2,8 +2,8 @@ import threading
 import time
 
 
-# func to calculate the Collatz gradient for a given number
-def gradient(num):
+# func to calculate the Collatz step for a given number
+def colatz_func(num):
     new_num = 0
     while num != 1:
         if num % 2 == 0:
@@ -30,7 +30,7 @@ def main(n, num_threads):
         thread_numbers = numbers[start_idx:end_idx]
 
         # Create a thread for each range of numbers
-        thread = threading.Thread(target=lambda nums: results.extend([gradient(num) for num in nums]),
+        thread = threading.Thread(target=lambda nums: results.extend([colatz_func(num) for num in nums]),
                                   args=(thread_numbers,))
         threads.append(thread)
         thread.start()
@@ -47,6 +47,6 @@ def main(n, num_threads):
 
 
 if __name__ == "__main__":
-    n_nums = 600000
-    num_threads = 4
+    n_nums = 1000
+    num_threads = 10
     main(n_nums, num_threads)
