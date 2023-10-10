@@ -1,5 +1,6 @@
-import threading
 import time
+import itertools
+import concurrent.futures
 
 
 # Function to calculate the Collatz step for a given number
@@ -15,46 +16,36 @@ def collatz_func(num):
 
 
 def main(n, num_threads):
+    """ n - number of numbers to calculate the gradient for
+        num_threads - number of threads to use for parallelization"""
+
     start_time = time.time()
 
     # List of numbers to calculate gradients for
     numbers = list(range(1, n + 1))
 
-    threads = []  # List to hold thread objects
-    results = []  # List to store results from each thread
-    locks = [threading.Lock() for _ in range(num_threads)]  # Create locks for each thread
+    # Calculate the gradient for each number
+    def worker(start, end):
+        total_steps = 0
+        for number in itertools.islice(numbers, start, end):
+            total_steps += collatz_func(number)
+        return total_steps
 
-    def worker(nums, thread_id):
-        thread_results = []
-        for num in nums:
-            thread_results.append(collatz_func(num))
-        # Acquire the lock before modifying the shared 'results' list
-        with locks[thread_id]:
-            results.extend(thread_results)
+    chunk_size = n // num_threads
+    chunks = [(i * chunk_size, (i + 1) * chunk_size) for i in range(num_threads)]
 
-    for i in range(num_threads):
-        # Divide the work among threads
-        start_idx = i * (n // num_threads)
-        end_idx = (i + 1) * (n // num_threads)
-        thread_numbers = numbers[start_idx:end_idx]
-
-        # Create a thread for each range of numbers
-        thread = threading.Thread(target=worker, args=(thread_numbers, i))
-        threads.append(thread)
-        thread.start()
-
-    # Wait for all threads to complete
-    for thread in threads:
-        thread.join()
+    # Calculate the gradient for each chunk in parallel
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
+        results = list(executor.map(lambda chunk: worker(*chunk), chunks))
 
     # Calculate the mean gradient from the results
-    mean_gradient = sum(results) / len(results)
+    mean_gradient = sum(results) / n
 
     print("Середня кількість кроків:", mean_gradient)
     print("Час виконання:", time.time() - start_time)
 
 
 if __name__ == "__main__":
-    n_nums = 1000
+    n_nums = 10000
     num_threads = 10
     main(n_nums, num_threads)
